@@ -22,7 +22,7 @@ Players are given 13 minutes to unscramble Bible and Church-related words while 
 - Streamlit
 
 ### 🚀 Live Link
-[Click here to play the game](https://your-streamlit-link-here)
+[Click here to play the game] (https://church-word-scramble-akwbepfwjwqgnxunzncqud.streamlit.app/)
 
 ### 👩‍💻 Created by
 TED INNOVATIONS - For Church Programs.
