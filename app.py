@@ -3,13 +3,11 @@ import random
 import time
 import json
 import os
-import base64
 import urllib.parse
 from datetime import datetime
 
 st.set_page_config(page_title="Church Word Scramble", page_icon="✝️", layout="centered")
 
-# 50 WORDS POOL - 25 RANDOMLY PICKED FOR EACH PERSON
 WORDS = [
 "Pastor","Abasi","Praise","Omega","Christian","Salvation","Prayer","Singing","Offering","Keyboard",
 "Redeemed","Abasifreke","Minister","Microphone","Faith","Amplifier","Announcement","Worship","Assistant","Usher",
@@ -26,17 +24,12 @@ FILE2 = "ted_answers.json"
 FILE3 = "ted_feedback.json"
 AUDIO_FILE = "oceans.mp3"
 
-def get_audio_player():
+@st.cache_resource
+def get_audio_bytes():
     if os.path.exists(AUDIO_FILE):
-        if "audio_b64" not in st.session_state:
-            with open(AUDIO_FILE, "rb") as f:
-                st.session_state.audio_b64 = base64.b64encode(f.read()).decode()
-        b64 = st.session_state.audio_b64
-        # FIXED MUSIC: Removed autoplay loop abuse, now just controls (user presses play once)
-        return f"""<audio controls loop style="width:100%; margin:10px 0;">
-            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>
-            <p style="text-align:center; font-size:12px;">🎵 Oceans by Hillsong - Press Play ▶️</p>"""
-    return ""
+        with open(AUDIO_FILE, "rb") as f:
+            return f.read()
+    return None
 
 if "theme" not in st.session_state: st.session_state.theme = "dark"
 def toggle_theme():
@@ -163,7 +156,7 @@ if not st.session_state.started:
             st.error("⚠️ This name has already played."); st.stop()
         st.session_state.name=name_input.strip()
     if st.session_state.name:
-        st.success(f"Hello {st.session_state.name}! Are you ready?")
+        st.success(f"Hello **{st.session_state.name}**! Are you ready?")
         st.markdown("""
         <div class='instruction-box'>
         <p style='text-align:center; font-size:22px!important;'>📜 INSTRUCTIONS (READ CAREFULLY)</p>
@@ -177,28 +170,33 @@ if not st.session_state.started:
         <p>🔹 The use of hint button will cost you 2 marks for every usage.<p>
         <p>🔹 This game requires logical and critical thinking. </p>
         <p>🔹 The game is based on religious items, activities and beings.</p>
-        <p>🔹 To prevent malpractice, each participant's  scrambled word is shuffled accordingly.</p>
+        <p>🔹 To prevent malpractice, each participant's scrambled word is shuffled accordingly.</p>
         <p>🔹 You have 13 minutes only.</p>
         <p>🔹 Highest Score + Fastest Time WINS!</p>
         </div>
         """, unsafe_allow_html=True)
         if st.button("🚀 START QUIZ", use_container_width=True):
-            random.seed(time.time() + datetime.now().microsecond + hash(st.session_state.name) + random.randint(1, 1000000))
-            temp = random.sample(WORDS, 25)
-            random.shuffle(temp)
-            st.session_state.quiz=[(w, scramble(w)) for w in temp]
-            random.seed()
-            st.session_state.start_time=time.time()
-            st.session_state.started=True
-            st.session_state.play_music=True
-            st.session_state.submitted=False
-            st.session_state.star_rating=0
-            st.session_state.current_q=0
-            st.session_state.hint_used={}
-            st.session_state.hint_count=0
-            st.session_state.auto_triggered=False
-            st.session_state.show_grid=False
-            st.session_state.answers={}
+            with st.spinner("🎮 Game Loading... Please wait, getting your questions ready..."):
+                get_audio_bytes()
+                random.seed(time.time() + datetime.now().microsecond + hash(st.session_state.name) + random.randint(1, 1000000))
+                temp = random.sample(WORDS, 25)
+                random.shuffle(temp)
+                st.session_state.quiz=[(w, scramble(w)) for w in temp]
+                random.seed()
+                st.session_state.started=True
+                st.session_state.play_music=True
+                st.session_state.submitted=False
+                st.session_state.star_rating=0
+                st.session_state.current_q=0
+                st.session_state.hint_used={}
+                st.session_state.hint_count=0
+                st.session_state.auto_triggered=False
+                st.session_state.show_grid=False
+                st.session_state.answers={}
+                time.sleep(0.5)
+                st.session_state.start_time=time.time()
+            st.success("Ready! Starting game...")
+            time.sleep(0.5)
             st.rerun()
     st.stop()
 
@@ -210,7 +208,6 @@ if len(quiz)==0:
     st.session_state.started=False
     st.rerun()
 
-# RESULT PAGE
 if st.session_state.get("submitted", False):
     score = st.session_state.result_score
     raw_score = st.session_state.result_raw_score
@@ -223,7 +220,7 @@ if st.session_state.get("submitted", False):
     elapsed = st.session_state.result_elapsed
     hint_count = st.session_state.result_hint_count
     auto_triggered = st.session_state.result_auto_triggered
-    
+
     st.markdown(f"""<div style="text-align:center; padding:25px; background: linear-gradient(135deg, #0A1931, #1a2f5a); border:3px solid #FFD700; border-radius:20px;">
         <h2 style="color:#FFD700!important;">Well-done {name}!</h2></div>""", unsafe_allow_html=True)
     st.markdown(f"""<div class='instruction-box'>
@@ -232,13 +229,12 @@ if st.session_state.get("submitted", False):
     <p>⏰ Auto Penalty: -{3 if auto_triggered else 0}</p>
     <p>✅ Final Score: {score}/{total}</p><p>📊 Final %: {percent}%</p><p>💬 {remark}</p>
     <p>⏱️ Time: {int(elapsed//60)}m {int(elapsed%60)}s</p></div>""", unsafe_allow_html=True)
-    
-    # WHATSAPP SHARE ADDED
+
     share_text = f"✝️ CHURCH WORD SCRAMBLE - TED 2026\nI, {name}, scored {score}/{total} ({percent}%)!\n{remark}\nTime: {int(elapsed//60)}m {int(elapsed%60)}s\nCan you beat me?"
     encoded = urllib.parse.quote(share_text)
     wa_link = f"https://wa.me/?text={encoded}"
     st.link_button("📤 Share My Score to WhatsApp", wa_link, use_container_width=True)
-    
+
     st.divider()
     st.subheader("⭐ Rate This Game")
     c1,c2,c3,c4,c5 = st.columns(5)
@@ -262,7 +258,7 @@ if st.session_state.get("submitted", False):
             fb = load_feedback()
             fb.append({"Name":name,"rating":st.session_state.star_rating,"feedback":fb_text,"date":datetime.now().strftime("%Y-%m-%d %H:%M")})
             save_feedback(fb)
-        st.success(f"We have taken note of your feedback, {name}! Thank you!")
+        st.success("We have taken note of your feedback. Thank you!")
     st.divider(); st.subheader("📋 Your Review"); st.dataframe(review,use_container_width=True)
     st.subheader("🏆 Leaderboard"); st.dataframe(new_board_sorted,use_container_width=True)
     if st.button("🔄 Close & Play Again", type="primary", use_container_width=True):
@@ -270,20 +266,17 @@ if st.session_state.get("submitted", False):
         st.rerun()
     st.stop()
 
-
-# Using fragment so timer does NOT reload the audio player every second
 @st.fragment(run_every=1)
 def show_timer_and_auto_submit():
     elapsed_inner = time.time() - st.session_state.start_time
     remaining_inner = int(780 - elapsed_inner)
     if remaining_inner < 0: remaining_inner = 0
-    
+
     if remaining_inner == 0 and not st.session_state.submitted:
         st.session_state.auto_triggered = True
-        # trigger auto submit
         st.session_state.force_auto = True
         st.rerun()
-    
+
     pct_width = (remaining_inner/780*100) if remaining_inner>0 else 0
     color = "#22c55e" if pct_width>50 else "#eab308" if pct_width>20 else "#ef4444"
     mins = remaining_inner//60
@@ -295,7 +288,6 @@ def show_timer_and_auto_submit():
 def do_submit(is_auto=False):
     score=0; review=[]
     for i in range(len(quiz)):
-       
         try:
             q_item = quiz[i]
             if isinstance(q_item, (list, tuple)) and len(q_item) >= 1:
@@ -310,7 +302,7 @@ def do_submit(is_auto=False):
         except Exception:
             corr = ""
             scr = ""
-        
+
         ans = st.session_state.answers.get(i, st.session_state.get(f"a_{i}","")).strip()
         if ans.lower()==corr.lower(): score+=1
         review.append({"No":i+1,"Scrambled":scr,"Yours":ans or "-","Correct":corr,"Result":"✅" if ans.lower()==corr.lower() else "❌"})
@@ -346,7 +338,6 @@ def do_submit(is_auto=False):
     st.session_state.result_auto_triggered=is_auto
     st.rerun()
 
-
 if st.session_state.get("force_auto", False):
     st.session_state.force_auto = False
     st.session_state.auto_triggered=True
@@ -354,9 +345,10 @@ if st.session_state.get("force_auto", False):
     st.stop()
 
 if st.session_state.get("play_music", False):
-    st.markdown(get_audio_player(), unsafe_allow_html=True)
+    audio_bytes = get_audio_bytes()
+    if audio_bytes:
+        st.audio(audio_bytes, format="audio/mp3", loop=True)
 
-# SAVE BEFORE LEAVING 
 cur = st.session_state.get("current_q", 0)
 try: cur = int(cur)
 except: cur = 0
@@ -364,7 +356,6 @@ if cur < 0: cur = 0
 if cur >= len(quiz): cur = len(quiz)-1
 st.session_state.current_q = cur
 
-# SAFE RETRIEVAL 
 try:
     q_item = quiz[cur]
     if isinstance(q_item, (list, tuple)) and len(q_item) >= 1:
@@ -381,7 +372,6 @@ except Exception as e:
     scrambled = ""
     st.error(f"Question {cur+1} has issue, skipping. {e}")
 
-# Progress
 temp_count = len([v for v in st.session_state.answers.values() if v.strip()!=""])
 if st.session_state.get(f"a_{cur}","").strip()!="" and cur not in st.session_state.answers:
     temp_count += 1
@@ -390,7 +380,6 @@ if st.session_state.get(f"a_{cur}","").strip()=="" and cur in st.session_state.a
 
 st.write(f"📊 {temp_count}/{len(quiz)} answered | 💡 Hints used: {st.session_state.hint_count} | -{st.session_state.hint_count*2} marks")
 st.progress(temp_count/len(quiz) if len(quiz)>0 else 0)
-
 
 show_timer_and_auto_submit()
 
