@@ -222,7 +222,7 @@ if st.session_state.get("submitted", False):
     auto_triggered = st.session_state.result_auto_triggered
 
     st.markdown(f"""<div style="text-align:center; padding:25px; background: linear-gradient(135deg, #0A1931, #1a2f5a); border:3px solid #FFD700; border-radius:20px;">
-        <h2 style="color:#FFD700!important;">Well-done {name}!</h2></div>""", unsafe_allow_html=True)
+        <h2 style="color:#FFD700!important;">Well-done {name}. You scored {score}!</h2></div>""", unsafe_allow_html=True)
     st.markdown(f"""<div class='instruction-box'>
     <p>👤 {name}</p><p>📝 Initial Score: {raw_score}/{total} ({raw_percent}%)</p>
     <p>💡 Hint: {hint_count} x 2 = -{hint_count*2}</p>
@@ -258,7 +258,7 @@ if st.session_state.get("submitted", False):
             fb = load_feedback()
             fb.append({"Name":name,"rating":st.session_state.star_rating,"feedback":fb_text,"date":datetime.now().strftime("%Y-%m-%d %H:%M")})
             save_feedback(fb)
-        st.success("We have taken note of your feedback. Thank you!")
+        st.success(f"We have taken note of your feedback, {name}! Thank you.")
     st.divider(); st.subheader("📋 Your Review"); st.dataframe(review,use_container_width=True)
     st.subheader("🏆 Leaderboard"); st.dataframe(new_board_sorted,use_container_width=True)
     if st.button("🔄 Close & Play Again", type="primary", use_container_width=True):
